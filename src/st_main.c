@@ -37,6 +37,27 @@
 int main(int argc, char *argv[])
 
 {
-    printf("Hello World!\n");
+    // Initializations:
+    int i, f=0;
+
+    // Parse command line options:
+    struct option longopts[] = {
+    { "files", required_argument,  NULL,  'f' },
+    { 0, 0, 0, 0 }};
+
+    while((i = getopt_long(argc, argv, "f", longopts, NULL)) != -1)
+
+    {
+        if (i == -1) break;
+
+        switch(i)
+
+        {
+            case 'f': f = atoi(optarg);
+                      break;
+            default:  abort();
+        }
+    }
+
     return 0;
 }
