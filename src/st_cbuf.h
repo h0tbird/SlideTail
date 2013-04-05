@@ -20,68 +20,46 @@
 ******************************************************************************/
 
 //-----------------------------------------------------------------------------
+// Include guard:
+//-----------------------------------------------------------------------------
+
+#ifndef _ST_CBUF_
+#define _ST_CBUF_
+
+//-----------------------------------------------------------------------------
 // Includes:
 //-----------------------------------------------------------------------------
 
-#include "st_main.h"
+#include <stdlib.h>
 
 //-----------------------------------------------------------------------------
-// Globals:
+// Typedefs:
 //-----------------------------------------------------------------------------
 
-CBUF cbuf;
+typedef struct {
+
+    char name[128];
+
+} ELEM, *PELEM;
+
+typedef struct {
+
+    int   size;
+    int   start;
+    int   count;
+    PELEM elems;
+
+} CBUF, *PCBUF;
 
 //-----------------------------------------------------------------------------
-// Entry point:
+// Prototypes:
 //-----------------------------------------------------------------------------
 
-int main(int argc, char *argv[])
+void st_cbuf_new(PCBUF cb, int size);
+void st_cbuf_write(PCBUF cb, PELEM elem);
 
-{
-    int i,j,k,fd,wd,len;
-    char path[256];
-    char buf[EVENT_BUF_LEN];
-    struct inotify_event *event;
-    ELEM elem;
+//-----------------------------------------------------------------------------
+// End of include guard:
+//-----------------------------------------------------------------------------
 
-    // Arguments:
-    j = atoi(argv[1]);
-    strcpy(path, argv[2]);
-
-    // Setup the notify watch:
-    if((fd = inotify_init()) < 0) MyDBG(end0);
-    if((wd = inotify_add_watch(fd, path, IN_CREATE)) < 0) MyDBG(end1);
-
-    // Initialize the circular buffer:
-    st_cbuf_new(&cbuf, j);
-
-    while(1) {
-
-        i=0; if((len = read(fd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
-
-        while(i<len) {
-
-            // Get one file event:
-            event = (struct inotify_event *) &buf[i];
-            i += EVENT_SIZE + event->len;
-            if(event->mask & IN_ISDIR) continue;
-
-            // Add it to the tail list:
-            strcpy(elem.name, event->name);
-            st_cbuf_write(&cbuf, &elem);
-        }
-
-        // Print the current window of files:
-        for(k=0; k<j; k++) { printf("File %d: %s\n", k, cbuf.elems[k].name); } printf("\n");
-    }
-
-    // Return on success:
-    inotify_rm_watch(fd, wd);
-    close(fd);
-    return 0;
-
-    // Return on error:
-    end2: inotify_rm_watch(fd, wd);
-    end1: close(fd);
-    end0: return -1;
-}
+#endif

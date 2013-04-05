@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <sys/inotify.h>
 #include <errno.h>
+#include "st_cbuf.h"
 
 //-----------------------------------------------------------------------------
 // Defines:

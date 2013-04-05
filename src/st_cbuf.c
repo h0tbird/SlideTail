@@ -23,65 +23,30 @@
 // Includes:
 //-----------------------------------------------------------------------------
 
-#include "st_main.h"
+#include "st_cbuf.h"
 
 //-----------------------------------------------------------------------------
-// Globals:
+// st_cbuf_new:
 //-----------------------------------------------------------------------------
 
-CBUF cbuf;
-
-//-----------------------------------------------------------------------------
-// Entry point:
-//-----------------------------------------------------------------------------
-
-int main(int argc, char *argv[])
+void st_cbuf_new(PCBUF cb, int size)
 
 {
-    int i,j,k,fd,wd,len;
-    char path[256];
-    char buf[EVENT_BUF_LEN];
-    struct inotify_event *event;
-    ELEM elem;
+    cb->size  = size;
+    cb->start = 0;
+    cb->count = 0;
+    cb->elems = (PELEM)calloc(cb->size, sizeof(ELEM));
+}
 
-    // Arguments:
-    j = atoi(argv[1]);
-    strcpy(path, argv[2]);
+//-----------------------------------------------------------------------------
+// st_cbuf_write:
+//-----------------------------------------------------------------------------
 
-    // Setup the notify watch:
-    if((fd = inotify_init()) < 0) MyDBG(end0);
-    if((wd = inotify_add_watch(fd, path, IN_CREATE)) < 0) MyDBG(end1);
+void st_cbuf_write(PCBUF cb, PELEM elem)
 
-    // Initialize the circular buffer:
-    st_cbuf_new(&cbuf, j);
-
-    while(1) {
-
-        i=0; if((len = read(fd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
-
-        while(i<len) {
-
-            // Get one file event:
-            event = (struct inotify_event *) &buf[i];
-            i += EVENT_SIZE + event->len;
-            if(event->mask & IN_ISDIR) continue;
-
-            // Add it to the tail list:
-            strcpy(elem.name, event->name);
-            st_cbuf_write(&cbuf, &elem);
-        }
-
-        // Print the current window of files:
-        for(k=0; k<j; k++) { printf("File %d: %s\n", k, cbuf.elems[k].name); } printf("\n");
-    }
-
-    // Return on success:
-    inotify_rm_watch(fd, wd);
-    close(fd);
-    return 0;
-
-    // Return on error:
-    end2: inotify_rm_watch(fd, wd);
-    end1: close(fd);
-    end0: return -1;
+{
+    int end = (cb->start + cb->count) % cb->size;
+    cb->elems[end] = *elem;
+    if(cb->count == cb->size) cb->start = (cb->start + 1) % cb->size;
+    else ++ cb->count;
 }
