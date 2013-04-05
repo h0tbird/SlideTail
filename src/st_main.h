@@ -32,15 +32,20 @@
 
 #define _GNU_SOURCE
 #include <unistd.h>
+#include <string.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <sys/inotify.h>
+#include <errno.h>
 
 //-----------------------------------------------------------------------------
 // Defines:
 //-----------------------------------------------------------------------------
 
 #define MyDBG(x) do {printf("(%d) %s:%d\n", errno, __FILE__, __LINE__); goto x;} while (0)
+#define EVENT_SIZE  ( sizeof (struct inotify_event) )
+#define EVENT_BUF_LEN ( 1024 * ( EVENT_SIZE + 16 ) )
 
 //-----------------------------------------------------------------------------
 // Typedefs:

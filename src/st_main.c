@@ -31,33 +31,44 @@
 
 
 //-----------------------------------------------------------------------------
-// Entry point:
+// Entry point: ./ftail 5 /tmp/randlog
 //-----------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 
 {
-    // Initializations:
-    int i, f=0;
+    int i, n, fd, wd, len;
+    char path[256];
+    char buf[EVENT_BUF_LEN];
+    struct inotify_event *event;
 
-    // Parse command line options:
-    struct option longopts[] = {
-    { "files", required_argument,  NULL,  'f' },
-    { 0, 0, 0, 0 }};
+    n = atoi(argv[1]);
+    strcpy(path, argv[2]);
 
-    while((i = getopt_long(argc, argv, "f", longopts, NULL)) != -1)
+    printf("Window width: %d\n", n);
+    printf("Directori to watch: %s\n", path);
 
-    {
-        if (i == -1) break;
+    if ((fd = inotify_init()) < 0) MyDBG(end0);
+    if ((wd = inotify_add_watch(fd, path, IN_CREATE)) < 0) MyDBG(end1);
 
-        switch(i)
+    while(1) {
 
-        {
-            case 'f': f = atoi(optarg);
-                      break;
-            default:  abort();
+        i=0; if ((len = read(fd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
+
+        while (i < len) {
+            event = (struct inotify_event *) &buf[i];
+            i += EVENT_SIZE + event->len;
+            if (!(event->mask & IN_ISDIR)) printf("New file: %s\n", event->name);
         }
     }
 
+    // Return on success:
+    inotify_rm_watch(fd, wd);
+    close(fd);
     return 0;
+
+    // Return on error:
+    end2: inotify_rm_watch(fd, wd);
+    end1: close(fd);
+    end0: return -1;
 }
