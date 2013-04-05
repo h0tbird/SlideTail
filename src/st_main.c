@@ -48,17 +48,22 @@ int main(int argc, char *argv[])
     printf("Window width: %d\n", n);
     printf("Directori to watch: %s\n", path);
 
-    if ((fd = inotify_init()) < 0) MyDBG(end0);
-    if ((wd = inotify_add_watch(fd, path, IN_CREATE)) < 0) MyDBG(end1);
+    if((fd = inotify_init()) < 0) MyDBG(end0);
+    if((wd = inotify_add_watch(fd, path, IN_CREATE)) < 0) MyDBG(end1);
 
     while(1) {
 
-        i=0; if ((len = read(fd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
+        i=0; if((len = read(fd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
 
-        while (i < len) {
+        while(i<len) {
+
+            // Get one file event:
             event = (struct inotify_event *) &buf[i];
             i += EVENT_SIZE + event->len;
-            if (!(event->mask & IN_ISDIR)) printf("New file: %s\n", event->name);
+            if(event->mask & IN_ISDIR) continue;
+
+            // Add it to the tail list:
+            printf("New file: %s\n", event->name);
         }
     }
 
