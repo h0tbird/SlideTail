@@ -32,14 +32,27 @@
 CBUF cbuf;
 
 //-----------------------------------------------------------------------------
+// W_Tail:
+//-----------------------------------------------------------------------------
+
+void *W_Tail(void *arg)
+
+{
+    // Do something:
+    pthread_t id = pthread_self();
+    while(1){printf("[%li] Do something.\n", (unsigned long int)id); sleep(20);}
+}
+
+//-----------------------------------------------------------------------------
 // Entry point:
 //-----------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 
 {
+    // Variables:
     int i,j,k,fd,wd,len;
-    char path[256];
+    char path[128];
     char buf[EVENT_BUF_LEN];
     struct inotify_event *event;
     ELEM elem;
@@ -55,30 +68,29 @@ int main(int argc, char *argv[])
     // Initialize the circular buffer:
     st_cbuf_new(&cbuf, j);
 
+    // Main loop:
     while(1) {
 
+        // Blocking read:
         i=0; if((len = read(fd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
 
+        // Incoming:
         while(i<len) {
 
-            // Get one file event:
+            // Get one event:
             event = (struct inotify_event *) &buf[i];
             i += EVENT_SIZE + event->len;
             if(event->mask & IN_ISDIR) continue;
 
-            // Add it to the tail list:
+            // New file: create a thread and add it to the queue:
+            if(pthread_create(&elem.thread, NULL, W_Tail, NULL) != 0) MyDBG(end2);
             strcpy(elem.name, event->name);
             st_cbuf_write(&cbuf, &elem);
         }
 
         // Print the current window of files:
-        for(k=0; k<j; k++) { printf("File %d: %s\n", k, cbuf.elems[k].name); } printf("\n");
+        for(k=0; k<j; k++) { printf("Slot [%d]: %s\n", k, cbuf.elems[k].name); } printf("\n");
     }
-
-    // Return on success:
-    inotify_rm_watch(fd, wd);
-    close(fd);
-    return 0;
 
     // Return on error:
     end2: inotify_rm_watch(fd, wd);
