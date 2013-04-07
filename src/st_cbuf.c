@@ -42,15 +42,13 @@ void st_cbuf_new(PCBUF cb, int size)
 // st_cbuf_write:
 //-----------------------------------------------------------------------------
 
-void st_cbuf_write(PCBUF cb, PELEM elem)
+void st_cbuf_write(PCBUF cb, int end, PELEM elem)
 
 {
-    int end = (cb->start + cb->count) % cb->size;
-
     if(cb->count == cb->size) {
-        cb->start = (cb->start + 1) % cb->size;
-        pthread_cancel(cb->elems[end].thread);
-    }
-    else ++ cb->count;
+    cb->start = (cb->start + 1) % cb->size;
+    pthread_cancel(cb->elems[end].thread);
+
+    } else ++ cb->count;
     cb->elems[end] = *elem;
 }

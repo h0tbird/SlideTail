@@ -58,7 +58,7 @@ typedef struct {
 //-----------------------------------------------------------------------------
 
 void st_cbuf_new(PCBUF cb, int size);
-void st_cbuf_write(PCBUF cb, PELEM elem);
+void st_cbuf_write(PCBUF cb, int end, PELEM elem);
 
 //-----------------------------------------------------------------------------
 // End of include guard:

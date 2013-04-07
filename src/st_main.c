@@ -30,6 +30,7 @@
 //-----------------------------------------------------------------------------
 
 CBUF cbuf;
+char path[128];
 
 //-----------------------------------------------------------------------------
 // W_Tail:
@@ -38,9 +39,22 @@ CBUF cbuf;
 void *W_Tail(void *arg)
 
 {
+    // Variables:
+    int ifd;//, wd;
+    //int id = (int)(intptr_t)arg;
+
+    printf("%s", path);
+    // Setup the notify watch:
+    if((ifd = inotify_init()) < 0) MyDBG(end0);
+    //if((wd = inotify_add_watch(ifd, cbuf.elems[id].name, IN_CREATE)) < 0) MyDBG(end1);
+
     // Do something:
-    pthread_t id = pthread_self();
-    while(1){printf("[%li] Do something.\n", (unsigned long int)id); sleep(20);}
+    //pthread_t tid = pthread_self();
+    //while(1){printf("[%li]:%d %s\n", (unsigned long int)tid, id, cbuf.elems[id].name); sleep(5);}
+
+    // Return on error:
+    //end1: close(ifd);
+    end0: pthread_exit(NULL);
 }
 
 //-----------------------------------------------------------------------------
@@ -52,7 +66,6 @@ int main(int argc, char *argv[])
 {
     // Variables:
     int i,j,k,fd,wd,len;
-    char path[128];
     char buf[EVENT_BUF_LEN];
     struct inotify_event *event;
     ELEM elem;
@@ -83,9 +96,9 @@ int main(int argc, char *argv[])
             if(event->mask & IN_ISDIR) continue;
 
             // New file: create a thread and add it to the queue:
-            if(pthread_create(&elem.thread, NULL, W_Tail, NULL) != 0) MyDBG(end2);
-            strcpy(elem.name, event->name);
-            st_cbuf_write(&cbuf, &elem);
+            k = (cbuf.start + cbuf.count) % cbuf.size;
+            if(pthread_create(&elem.thread, NULL, W_Tail, (void *)(intptr_t) k) != 0) MyDBG(end2);
+            strcpy(elem.name, event->name); st_cbuf_write(&cbuf, k, &elem);
         }
 
         // Print the current window of files:
