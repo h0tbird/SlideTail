@@ -30,7 +30,7 @@
 //-----------------------------------------------------------------------------
 
 CBUF cbuf;
-char path[128];
+char dir[128];
 
 //-----------------------------------------------------------------------------
 // W_Tail:
@@ -40,20 +40,29 @@ void *W_Tail(void *arg)
 
 {
     // Variables:
-    int ifd;//, wd;
-    //int id = (int)(intptr_t)arg;
+    int ifd, wd, len;
+    char path[256], buf[EVENT_BUF_LEN];
+    int id = (int)(intptr_t)arg;
 
-    printf("%s", path);
+    // Full path to watched file:
+    if(strcpy(path, dir) != (char *) &path) MyDBG(end0);
+    if(strcat(path, cbuf.elems[id].name) != (char *) &path) MyDBG(end0);
+
     // Setup the notify watch:
     if((ifd = inotify_init()) < 0) MyDBG(end0);
-    //if((wd = inotify_add_watch(ifd, cbuf.elems[id].name, IN_CREATE)) < 0) MyDBG(end1);
+    if((wd = inotify_add_watch(ifd, path, INOTAIL_WATCH_MASK)) < 0) MyDBG(end1);
 
     // Do something:
-    //pthread_t tid = pthread_self();
-    //while(1){printf("[%li]:%d %s\n", (unsigned long int)tid, id, cbuf.elems[id].name); sleep(5);}
+    while(1) {
+
+        // Blocking read:
+        if((len = read(ifd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
+        printf("Slot[%d]: Activity\n", id);
+    }
 
     // Return on error:
-    //end1: close(ifd);
+    end2: inotify_rm_watch(ifd, wd);
+    end1: close(ifd);
     end0: pthread_exit(NULL);
 }
 
@@ -72,11 +81,11 @@ int main(int argc, char *argv[])
 
     // Arguments:
     j = atoi(argv[1]);
-    strcpy(path, argv[2]);
+    strcpy(dir, argv[2]);
 
     // Setup the notify watch:
     if((fd = inotify_init()) < 0) MyDBG(end0);
-    if((wd = inotify_add_watch(fd, path, IN_CREATE)) < 0) MyDBG(end1);
+    if((wd = inotify_add_watch(fd, dir, IN_CREATE)) < 0) MyDBG(end1);
 
     // Initialize the circular buffer:
     st_cbuf_new(&cbuf, j);
@@ -102,7 +111,7 @@ int main(int argc, char *argv[])
         }
 
         // Print the current window of files:
-        for(k=0; k<j; k++) { printf("Slot [%d]: %s\n", k, cbuf.elems[k].name); } printf("\n");
+        for(k=0; k<j; k++) { printf("\nSlot [%d]: %s\n", k, cbuf.elems[k].name); } printf("\n");
     }
 
     // Return on error:
