@@ -1,7 +1,9 @@
 #SlideTail 0.0.1
 
 Concurrently tails a fixed-width sliding-window of the last 'n' files created in a given directory.
-Inotify is used to monitor the directory activity.
+Inotify is used to monitor the directory and file activity.
+It creates one fork per watched directory and one thread per watched file within that directory.
+It also supports resume of a previously stopped tailing session.
 
 ##Design
 **Diagram**
