@@ -1,4 +1,4 @@
-#SlideTail 0.0.1
+#SlideTail 0.0.1 (devel)
 
 Concurrently tails a fixed-width sliding-window of the last 'n' files created in a given directory.
 Inotify is used to monitor the directory and file activity.
