@@ -4,6 +4,23 @@ Concurrently tails a fixed-width sliding-window of the last 'n' files created in
 Inotify is used to monitor the directory and file activity.
 It creates one fork per watched directory and one thread per watched file within that directory.
 It also supports resume of a previously stopped tailing session.
+Output might be redirected to stdout or syslog.
+Can run as a commandline tool or in the background as a daemon.
+
+##Usage examples
+**stdout**
+
+    ./stail \
+    -w 5:/var/log/app1/:stdout \
+    -w 3:/var/log/app2/:stdout \
+    -w 2:/var/log/app3/:stdout
+
+**syslog**
+
+    ./stail \
+    -w 3:/var/log/app1/:syslog1.demo.lan:514 \
+    -w 3:/var/log/app2/:syslog1.demo.lan:515 \
+    -w 3:/var/log/app3/:syslog2.demo.lan:514
 
 ##Design
 **Diagram**
