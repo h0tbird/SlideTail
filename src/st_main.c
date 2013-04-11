@@ -40,29 +40,36 @@ void *W_Tail(void *arg)
 
 {
     // Variables:
-    int ifd, wd, len;
+    int fd, ifd, wd, len;
     char path[256], buf[EVENT_BUF_LEN];
     int id = (int)(intptr_t)arg;
+    struct stat finfo;
 
     // Full path to watched file:
     if(strcpy(path, dir) != (char *) &path) MyDBG(end0);
     if(strcat(path, cbuf.elems[id].name) != (char *) &path) MyDBG(end0);
 
-    // Setup the notify watch:
-    if((ifd = inotify_init()) < 0) MyDBG(end0);
-    if((wd = inotify_add_watch(ifd, path, INOTAIL_WATCH_MASK)) < 0) MyDBG(end1);
+    // Open file for reading only and get status:
+    if((fd = open(path, O_RDONLY)) < 0) MyDBG(end0);
+    if(fstat(fd, &finfo) < 0) MyDBG(end1);
+    if(!IS_TAILABLE(finfo.st_mode)) MyDBG(end1);
 
-    // Do something:
+    // Setup the notify watch:
+    if((ifd = inotify_init()) < 0) MyDBG(end1);
+    if((wd = inotify_add_watch(ifd, path, WATCH_MASK)) < 0) MyDBG(end2);
+
+    // Follow the file::
     while(1) {
 
         // Blocking read:
-        if((len = read(ifd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end2);
+        if((len = read(ifd, buf, EVENT_BUF_LEN)) < 0) MyDBG(end3);
         printf("Slot[%d]: Activity\n", id);
     }
 
     // Return on error:
-    end2: inotify_rm_watch(ifd, wd);
-    end1: close(ifd);
+    end3: inotify_rm_watch(ifd, wd);
+    end2: close(ifd);
+    end1: close(fd);
     end0: pthread_exit(NULL);
 }
 
@@ -111,7 +118,9 @@ int main(int argc, char *argv[])
         }
 
         // Print the current window of files:
-        for(k=0; k<j; k++) { printf("\nSlot [%d]: %s\n", k, cbuf.elems[k].name); } printf("\n");
+        printf("\n");
+        for(k=0; k<j; k++) { printf("Slot [%d]: %s\n", k, cbuf.elems[k].name); }
+        printf("\n");
     }
 
     // Return on error:
